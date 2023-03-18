@@ -37,7 +37,7 @@ A basic session:
   (make-instance 'foo :my-slot1 17)
 #+end_src
 
-See the [[file:package.lisp][package]] documentation for a usage guide and more examples.
+See the [[file:source/package.lisp][package]] documentation for a usage guide and more examples.
 
 ** Default class options
 
