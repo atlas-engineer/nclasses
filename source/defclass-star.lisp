@@ -601,8 +601,13 @@ BODY can be a list of `defgeneric' options (processed as-is, even
   `defgeneric'. This may seem irregular if the method body also needs
   declarations, but in such a case one's better off with a :method
   option or `defgeneric' for the method with `declare'.
-- If there's an `:export-generic-name-p' boolean option, export (T) or
-  don't export (NIL) the generic symbol.
+
+Additional, `define-generic'-specific options:
+- `:export-generic-name-p' boolean option --- export (T) or don't
+  export (NIL) the generic symbol.
+- `:setf-method' --- same as `:method', but put into a (setf NAME)
+  defgeneric (generated when necessary). Same as :method when already
+  in (setf NAME), although meaningless and `style-warn'ed.
 
 Example:
 
@@ -640,6 +645,11 @@ Example:
          (method-body (remove-if (lambda (f) (member f options :test #'equal)) forms))
          (export-generic-name-p (find :export-generic-name-p options :key #'first))
          (options (remove export-generic-name-p options :test #'equal))
+         (setf-methods (remove-if (lambda (o) (not (eq :setf-method (first o)))) options))
+         (options (loop for option in options
+                        unless (member option setf-methods)
+                          collect option))
+         (setf-generic-p (and (listp name) (eq 'setf (first name))))
          (export-p (if export-generic-name-p
                        (second export-generic-name-p)
                        *export-generic-name-p*))
@@ -654,18 +664,31 @@ Example:
                `((:method ,arglist
                    ,@method-body)))
            ,@options
+           ,@(when (and setf-methods setf-generic-p)
+               (loop for setf-method in setf-methods
+                     do (style-warn ":setf-method ~a is meaningless in setf generic, turning into :method"
+                                    setf-method)
+                     collect `(:method ,@(rest setf-method))))
            ,@(when documentation
                `((:documentation ,documentation))))
+       ,@(when (and setf-methods (not setf-generic-p))
+           `((defgeneric (setf ,name) ,(generalize-arglist (second (first setf-methods)))
+               ,@(loop for setf-method in setf-methods
+                       collect `(:method ,@(rest setf-method))))))
        ;; FIXME: Maybe only export if package of generic function name
        ;; matches *PACKAGE*?
        ,@(when export-p
            `((eval-when (:compile-toplevel :load-toplevel :execute)
                (export ',name ,(package-name *package*)))))
-       ,@(let ((documentation (or documentation
-                                  (second (first (member :documentation options :key #'first))))))
-           (when documentation
-             `((setf (documentation ',name 'function) ,documentation)
-               (setf (documentation (fdefinition ',name) 'function) ,documentation)))))))
+       ,@(alexandria:when-let ((documentation
+                                (or documentation
+                                    (second (first (member :documentation options :key #'first))))))
+           (append
+            (when (or setf-generic-p setf-methods)
+              `((setf (documentation (fdefinition '(setf ,name)) 'function) ,documentation)))
+            (unless setf-generic-p
+              `((setf (documentation ',name 'function) ,documentation)
+                (setf (documentation (fdefinition ',name) 'function) ,documentation))))))))
 
 (setf (macro-function 'defgeneric*) (macro-function 'define-generic)
       (documentation 'defgeneric* 'function) (documentation 'define-generic 'function)

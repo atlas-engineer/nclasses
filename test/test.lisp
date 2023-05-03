@@ -628,7 +628,9 @@ A slot with explicit documentation."
      (:method ((a a) (b b) &key (c nil))
        (+ a b))
      (:method ((a x) (b z) &key c)
-       c)))
+       c))))
+
+(define-test define-generic-special-options ()
   (assert-equal
    `(prog1
         (defgeneric generic
@@ -640,9 +642,37 @@ A slot with explicit documentation."
             "If :export-generic-name-p is true, export the name.")
       (setf (documentation (fdefinition 'generic) 'function)
             "If :export-generic-name-p is true, export the name."))
-   (macroexpand-1 '(define-generic generic (a b &key c)
-                    "If :export-generic-name-p is true, export the name."
-                    (:export-generic-name-p t)))))
+   (macroexpand-1 `(define-generic generic (a b &key c)
+                     "If :export-generic-name-p is true, export the name."
+                     (:export-generic-name-p t))))
+  (assert-equal
+   `(prog1
+        (defgeneric generic
+            (a b &key c)
+          (:documentation ":setf-method generating (setf GENERIC) declaration."))
+      (defgeneric (setf generic)
+          (value a b c)
+        (:method (value a b c) (declare (ignorable value a b c)) nil))
+      (setf (documentation (fdefinition '(setf generic)) 'function)
+            ":setf-method generating (setf GENERIC) declaration.")
+      (setf (documentation 'generic 'function)
+            ":setf-method generating (setf GENERIC) declaration.")
+      (setf (documentation (fdefinition 'generic) 'function)
+            ":setf-method generating (setf GENERIC) declaration."))
+   (macroexpand-1
+    '(define-generic generic (a b &key c)
+      ":setf-method generating (setf GENERIC) declaration."
+      (:setf-method (value a b c)
+       (declare (ignorable value a b c))
+       nil))))
+  (assert-error
+   'nclasses::hu.dwim.defclass-star-style-warning
+   (macroexpand-1
+    '(define-generic (setf generic) (value a b &key c)
+      ":setf-method redundant and `style-warn'ed in (setf GENERIC)."
+      (:setf-method (value a b c)
+       (declare (ignorable value a b c))
+       nil)))))
 
 
 (define-test make-instance-star-backward-compatible ()
