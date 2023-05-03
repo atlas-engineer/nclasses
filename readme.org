@@ -121,6 +121,50 @@ These allow to export generic name after defining it:
     (:export-generic-name-p t))
 #+end_src
 
+**** :setf-method
+There's an inconvenient pattern: generating both getter and setter
+with =defgeneric=. =:setf-method= option aims to simplify this:
+#+begin_src lisp
+  (defgeneric foo (a)
+    (:method ((a integer))
+      (bar a))
+    (:documentation "Quux.
+  Setf-able."))
+  (defgeneric (setf foo) (value a)
+    (:method ((value string) (a integer))
+      (setf (bar a) value))
+    (:documentation "Quux.
+  Setf-able."))
+#+end_src
+
+into this:
+#+begin_src lisp
+  (define-generic foo ((a integer))
+    "Quux.
+  Setf-able."
+    (bar a)
+    (:setf-method ((value string) (a integer))
+                  (setf (bar a) value)))
+
+  ;; =>
+  ;; (defgeneric foo (a)
+  ;;   (:method ((a integer))
+  ;;     (bar a))
+  ;;   (:documentation "Quux.
+  ;; Setf-able."))
+  ;; (defgeneric (setf foo) (value a)
+  ;;   (:method ((value string) (a integer))
+  ;;     (setf (bar a) value))
+  ;;   (:documentation "Quux.
+  ;; Setf-able."))
+#+end_src
+
+While the syntax is relatively opinionated and may look overly wordy,
+it strikes the balance between brevity and explicitness. Setf method
+args are passed explicitly because these often are quite different
+from the regular methods' args.
+
+A shorter syntax may appear sometime in the future, but =:setf-method= is there to stay.
 
 *** make-instance*
 There are several idioms that heavily object-oriented CL code converges to:
