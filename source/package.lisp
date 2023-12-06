@@ -14,6 +14,7 @@
            #:defgeneric* ; alias
            #:make-instance*
            #:make* ; alias
+           #:make ; alias
            ;; transformers
            #:default-accessor-name-transformer
            #:dwim-accessor-name-transformer
@@ -30,7 +31,7 @@
 - `nclasses:define-class' (aliases `nclasses:define-class*' and `nclasses:defclass*')
 - `nclasses:define-condition*' (alias `nclasses:defcondition*').
 - `nclasses:define-generic' (aliases `nclasses:define-generic*' and `nclasses:defgeneric*').
-- `nclasses:make-instance*' (alias `nclasses:make*').
+- `nclasses:make-instance*' (alias `nclasses:make*' and `nclasses:make').
 
 Compared to the standard macros, they accept extra options and slot definition
 is smarter.

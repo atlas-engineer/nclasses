@@ -782,4 +782,6 @@ the future." arguments))
           (list last-appendable-form)))))
 
 (setf (macro-function 'make*) (macro-function 'make-instance*)
-      (documentation 'make* 'function) (documentation 'make-instance* 'function))
+      (documentation 'make* 'function) (documentation 'make-instance* 'function)
+      (macro-function 'make) (macro-function 'make-instance*)
+      (documentation 'make 'function) (documentation 'make-instance* 'function))
